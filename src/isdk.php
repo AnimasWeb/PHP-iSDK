@@ -66,37 +66,39 @@ public function cfgCon($name,$dbOn="on") {
 }
 
 ###Connect using API credentials###
-public function stdCon($appName,$key,$dbOn="on",$type="i") {
-  $this->debug = $dbOn;
-  include('conn.cfg.php');
+public static function stdCon($appName,$key,$dbOn="on",$type="i") {
+  $app = new self();
+  
+  $app->debug = $dbOn;
   if(!empty($appName)) {
     if($type=="i") {
-      $this->client = new xmlrpc_client("https://".$appName.".infusionsoft.com/api/xmlrpc");
+      $app->client = new xmlrpc_client("https://$appName.infusionsoft.com/api/xmlrpc");
     } else if($type=="m") {
-      $this->client = new xmlrpc_client("https://".$appName.".mortgageprocrm.com/api/xmlrpc");
+      $app->client = new xmlrpc_client("https://$appName.mortgageprocrm.com/api/xmlrpc");
     } else {
-      throw new Exception ("Invalid configuration for name: \"" . $appName . "\"");
+      throw new Exception ("Invalid  application type: \"" . $appName . "\"");
     }
   } else {
-    throw new Exception("Invalid configuration name: \"" . $appName . "\"");
+    throw new Exception("Invalid application name: \"" . $appName . "\"");
   }
 
   ###Return Raw PHP Types###
-  $this->client->return_type = "phpvals";
+  $app->client->return_type = "phpvals";
 
   ###Dont bother with certificate verification###
-  $this->client->setSSLVerifyPeer(FALSE);
-  //$this->client->setDebug(2);
+  $app->client->setSSLVerifyPeer(FALSE);
+  //$app->client->setDebug(2);
   ###API Key###
-  $this->key = $key;
+  $app->key = $key;
 
   ###Connection verification###
-  $result = $this->dsGetSetting('Contact', 'optiontypes');
-  if (strpos($result, 'InvalidKey') == 12) {
-    return FALSE;
-  } else { return TRUE; }
+  $test_conn = $app->appEcho($app->test_string);
 
-  return TRUE;
+  if( $test_conn != $app->test_string ) {
+    $app = false;
+  }
+
+  return $app;
 }
 
 ###Connect and Obtain an API key from a vendor key###
